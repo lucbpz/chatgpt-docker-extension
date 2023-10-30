@@ -1,0 +1,7 @@
+services:
+  extension-hackathon-ai:
+    image: ${DESKTOP_PLUGIN_IMAGE}
+  mongo:
+    image: mongo
+    expose:
+      - 27017
