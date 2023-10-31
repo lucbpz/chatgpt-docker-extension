@@ -1,6 +1,8 @@
 services:
   extension-hackathon-ai:
     image: ${DESKTOP_PLUGIN_IMAGE}
+    env_file:
+      - ~/workspace/docker/.env
   mongo:
     image: mongo
     expose:

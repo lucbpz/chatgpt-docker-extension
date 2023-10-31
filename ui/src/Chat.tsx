@@ -24,53 +24,43 @@ interface IMessage {
   createdAt: number;
 }
 
-interface Props {
-  hasKey: boolean;
-}
-export const Chat = ({ hasKey }: Props) => {
+export const Chat = () => {
   const [input, setInput] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
   const [messages, setMessages] = React.useState<IMessage[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(false);
-
-  const getMessages = async () => {
-    const result = await ddClient.extension.vm?.service?.get("/messages");
-    return result as IMessage[];
-  };
-
-  const sendMessage = async (message: any) => {
-    const chat = await ddClient.extension.vm?.service?.post(
-      "/messages",
-      message
-    );
-    return chat as IMessage[];
-  };
-
-  React.useEffect(() => {
-    getMessages().then((response) => setMessages(response));
-  }, []);
-
-  const handleSend = async () => {
-    if (input.trim() !== "") {
-      try {
-        setLoading(true);
-        setMessages((messages) => [
-          ...messages,
-          { role: "user", content: input, createdAt: Date.now() },
-        ]);
-        const chat = await sendMessage({ role: "user", content: input });
-        setMessages(chat);
-        setLoading(false);
-        setInput("");
-      } catch (err: any) {
-        console.error(err);
-        ddClient.desktopUI.toast.error(err.message);
-        setLoading(false);
-      }
-    }
-  };
 
   const handleInputChange = (event: any) => {
     setInput(event.target.value);
+  };
+
+  React.useEffect(() => {
+    const getMessages = async () => {
+      const messages = await ddClient.extension.vm?.service?.get("/messages");
+      return messages;
+    };
+
+    setLoading(true);
+    getMessages().then((response: any) => {
+      setMessages(response);
+      setLoading(false);
+    });
+  }, []);
+
+  const sendMessage = async () => {
+    setLoading(true);
+    const message: IMessage = {
+      role: "user",
+      content: input,
+      createdAt: Date.now(),
+    };
+    setMessages((oldMessages) => [...oldMessages, message]);
+    const newMessages: any = await ddClient.extension.vm?.service?.post(
+      "/messages",
+      message
+    );
+    setMessages(newMessages);
+    setInput("");
+    setLoading(false);
   };
 
   return (
@@ -103,8 +93,8 @@ export const Chat = ({ hasKey }: Props) => {
             <Button
               fullWidth
               endIcon={loading ? <CircularProgress size={24} /> : <SendIcon />}
-              onClick={handleSend}
-              disabled={!hasKey || loading}
+              onClick={sendMessage}
+              disabled={loading}
             >
               Send
             </Button>
