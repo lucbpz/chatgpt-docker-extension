@@ -1,26 +1,26 @@
 const fs = require("fs");
 const http = require("http");
 const process = require("process");
-
+const morgan = require("morgan");
 const OpenAI = require("openai");
 const express = require("express");
+
 const { connectDb } = require("./db");
 const { Keys, Message } = require("./schema");
 
 const app = express();
 app.use(express.json()); // <==== parse request body as JSON
+app.use(morgan("tiny"));
 
 connectDb();
 
 app.get("/apikey", async function (req, res) {
   const keys = await Keys.find({ key: "openai" });
 
-  console.log("get api key: ", keys[0] || "");
   res.send(keys[0] || "");
 });
 
 app.post("/apikey", async function (req, res) {
-  console.log("post api key: ", req.body.value);
   const key = new Keys({
     key: "openai",
     value: req.body.value,
@@ -30,9 +30,9 @@ app.post("/apikey", async function (req, res) {
 });
 
 app.get("/messages", async function (req, res) {
-  const history = await Message.find({}).sort({ createdAt: -1 });
+  const chat = await Message.find({}).sort({ createdAt: 1 });
 
-  res.send(history.map((message) => message));
+  res.send(chat.map((message) => message));
 });
 
 app.post("/messages", async function (req, res) {
@@ -42,8 +42,6 @@ app.post("/messages", async function (req, res) {
     res.status(500).send({ message: "no openai key" });
     return;
   }
-
-  console.log("post message: ", req.body, "api key: ", openaiKey[0].value);
 
   const openai = new OpenAI({
     apiKey: openaiKey[0].value,
@@ -56,11 +54,11 @@ app.post("/messages", async function (req, res) {
   });
   await userMessage.save();
 
-  const history = await Message.find({}).sort({ createdAt: -1 });
+  let chat = await Message.find({}).sort({ createdAt: 1 });
 
   const response = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
-    messages: history.map((message) => ({
+    messages: chat.map((message) => ({
       role: message.role,
       content: message.content,
     })),
@@ -73,7 +71,15 @@ app.post("/messages", async function (req, res) {
   });
 
   await chatgptMessage.save();
-  res.send({ message: response.choices[0].message });
+
+  chat = await Message.find({}).sort({ createdAt: 1 });
+
+  console.log(
+    "returning chat",
+    chat.map((message) => message)
+  );
+  // res.send({ message: response.choices[0].message });
+  res.send(chat.map((message) => message));
 });
 
 var sock = process.argv[2];

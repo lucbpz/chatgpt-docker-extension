@@ -7,16 +7,17 @@ import {
   Avatar,
   Grid,
   Paper,
+  Stack,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import CircularProgress from "@mui/material/CircularProgress";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import { Person } from "@mui/icons-material";
+import { createDockerDesktopClient } from "@docker/extension-api-client";
+import { formatDistance } from "date-fns";
 
-// const messages = [
-//   { id: 1, text: "Hi there!", sender: "bot" },
-//   { id: 2, text: "Hello!", sender: "user" },
-//   { id: 3, text: "How can I assist you today?", sender: "bot" },
-// ];
+const ddClient = createDockerDesktopClient();
+
 interface IMessage {
   role: string;
   content: string;
@@ -24,14 +25,25 @@ interface IMessage {
 }
 
 interface Props {
-  //   message?: string;
-  //   autoSave: boolean;
-  getMessages: () => Promise<any[]>;
-  onSend: (message: any) => Promise<any>;
+  hasKey: boolean;
 }
-export const Chat = ({ getMessages, onSend }: Props) => {
+export const Chat = ({ hasKey }: Props) => {
   const [input, setInput] = React.useState("");
   const [messages, setMessages] = React.useState<IMessage[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(false);
+
+  const getMessages = async () => {
+    const result = await ddClient.extension.vm?.service?.get("/messages");
+    return result as IMessage[];
+  };
+
+  const sendMessage = async (message: any) => {
+    const chat = await ddClient.extension.vm?.service?.post(
+      "/messages",
+      message
+    );
+    return chat as IMessage[];
+  };
 
   React.useEffect(() => {
     getMessages().then((response) => setMessages(response));
@@ -39,14 +51,21 @@ export const Chat = ({ getMessages, onSend }: Props) => {
 
   const handleSend = async () => {
     if (input.trim() !== "") {
-      const chatgptMessage = await onSend({ role: "user", content: input });
-      setMessages([...messages, chatgptMessage]);
-      console.log(input);
-      setMessages([
-        ...messages,
-        { role: "user", content: input, createdAt: Date.now() },
-      ]);
-      setInput("");
+      try {
+        setLoading(true);
+        setMessages((messages) => [
+          ...messages,
+          { role: "user", content: input, createdAt: Date.now() },
+        ]);
+        const chat = await sendMessage({ role: "user", content: input });
+        setMessages(chat);
+        setLoading(false);
+        setInput("");
+      } catch (err: any) {
+        console.error(err);
+        ddClient.desktopUI.toast.error(err.message);
+        setLoading(false);
+      }
     }
   };
 
@@ -57,7 +76,6 @@ export const Chat = ({ getMessages, onSend }: Props) => {
   return (
     <Box
       sx={{
-        // height: "100vh",
         mt: 2,
         display: "flex",
         flexDirection: "column",
@@ -65,8 +83,8 @@ export const Chat = ({ getMessages, onSend }: Props) => {
       }}
     >
       <Box sx={{ flexGrow: 1, overflow: "auto", p: 2 }}>
-        {messages.map((message) => (
-          <Message key={message.content} message={message as any} />
+        {(messages || []).map((message) => (
+          <Message key={message.createdAt} message={message as any} />
         ))}
       </Box>
       <Box sx={{ p: 2 }}>
@@ -84,10 +102,9 @@ export const Chat = ({ getMessages, onSend }: Props) => {
           <Grid item xs={2}>
             <Button
               fullWidth
-              color="primary"
-              variant="contained"
-              endIcon={<SendIcon />}
+              endIcon={loading ? <CircularProgress size={24} /> : <SendIcon />}
               onClick={handleSend}
+              disabled={!hasKey || loading}
             >
               Send
             </Button>
@@ -104,6 +121,10 @@ const Message = ({
   message: { role: string; content: string; createdAt: number };
 }) => {
   const isBot = message.role !== "user";
+
+  const relativeDate = formatDistance(new Date(message.createdAt), new Date(), {
+    addSuffix: true,
+  });
 
   return (
     <Box
@@ -123,18 +144,21 @@ const Message = ({
         <Avatar sx={{ bgcolor: isBot ? "primary.main" : "secondary.main" }}>
           {isBot ? <SmartToyIcon /> : <Person />}
         </Avatar>
-        <Paper
-          variant="outlined"
-          sx={{
-            p: 2,
-            ml: isBot ? 1 : 0,
-            mr: isBot ? 0 : 1,
-            backgroundColor: isBot ? "primary.light" : "secondary.light",
-            borderRadius: isBot ? "20px 20px 20px 5px" : "20px 20px 5px 20px",
-          }}
-        >
-          <Typography variant="body1">{message.content}</Typography>
-        </Paper>
+        <Stack direction="column">
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              ml: isBot ? 1 : 0,
+              mr: isBot ? 0 : 1,
+              backgroundColor: isBot ? "primary.light" : "secondary.light",
+              borderRadius: isBot ? "20px 20px 20px 5px" : "20px 20px 5px 20px",
+            }}
+          >
+            <Typography variant="body1">{message.content}</Typography>
+          </Paper>
+          <Typography variant="caption">{relativeDate}</Typography>
+        </Stack>
       </Box>
     </Box>
   );
