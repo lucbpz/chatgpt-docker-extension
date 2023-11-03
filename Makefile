@@ -1,4 +1,4 @@
-IMAGE?=lucasbernalte981/extension-hackathon-ai
+IMAGE?=lucasbernalte981/chatgpt-docker-extension
 TAG?=latest
 
 BUILDER=buildx-multi-arch

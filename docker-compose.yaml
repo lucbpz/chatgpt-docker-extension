@@ -1,5 +1,5 @@
 services:
-  extension-hackathon-ai:
+  chatgpt-docker-extension:
     image: ${DESKTOP_PLUGIN_IMAGE}
     env_file:
       - ~/workspace/docker/.env

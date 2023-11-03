@@ -19,7 +19,7 @@ COPY ui /ui
 RUN npm run build
 
 FROM --platform=$BUILDPLATFORM node:20.9.0-alpine3.18
-LABEL org.opencontainers.image.title="Open AI" \
+LABEL org.opencontainers.image.title="ChatGPT" \
     org.opencontainers.image.description="Docker extension with a node.js backend" \
     org.opencontainers.image.vendor="Docker Inc." \
     com.docker.desktop.extension.api.version="0.3.0" \

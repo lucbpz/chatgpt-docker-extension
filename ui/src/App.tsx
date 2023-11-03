@@ -16,7 +16,7 @@ export function App() {
   return (
     <>
       <Typography variant="h3" sx={{ pb: 2 }}>
-        OpenAI extension demo
+        OpenAI ChatGPT extension demo
       </Typography>
       <Stack>
         <Chat />
