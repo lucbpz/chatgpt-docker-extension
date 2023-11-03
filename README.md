@@ -1,11 +1,17 @@
-# OpenAI
+# ChatGPT Docker Extension
 
-This repository defines an example of a Docker extension. The files in this repository have been automatically generated as a result of running `docker extension init`.
+This extension was created for the [Docker AI/ML Hackathon](https://docker.devpost.com/details/workshops) in October 2023. It is a simple extension that allows you to chat with GPT-3 from the Docker Desktop Dashboard.
 
+You can see the whole live stream of the development of this extension [here](https://www.youtube.com/watch?v=78IMA8xEBHA).
 This extension is composed of:
 
-- A [frontend](./ui) app in React that makes a request to the `/hello` endpoint and displays the payload in Docker Desktop.
-- A [backend](./backend) container that runs an API in Go. It exposes the `/hello` endpoint which returns a JSON payload.
+- A [frontend](./ui) app in React that has a chat UI. Every time you send a message, it will be sent to the backend and both your message and the response from ChatGPT will be displayed in the chat.
+- A [backend](./backend) container that runs an API in NodeJS. This API is responsible for sending the messages to ChatGPT and returning the response to the frontend.
+- A Mongo database that stores the conversation history.
+
+### Screenshots
+
+![Preview of the extesion in Docker Desktop](./docs/preview.png)
 
 > You can build your Docker Extension using your fav tech stack:
 >
@@ -27,16 +33,25 @@ Request one or submit yours [here](https://github.com/docker/extensions-sdk/issu
 
 You can use `docker` to build, install and push your extension. Also, we provide an opinionated [Makefile](Makefile) that could be convenient for you. There isn't a strong preference of using one over the other, so just use the one you're most comfortable with.
 
+### Prerequisites
+
+The extension contains a `docker-compose.yaml` where you can see it loads an env file from a folder.
+
+- Change the folder according to your needs. You can reference it to the `.env` file that is inside this repository.
+- Change the `OPENAI_API_KEY` to your own API key. You can get one [here](https://platform.openai.com/).
+
+### Build and install
+
 To build the extension, use `make build-extension` **or**:
 
 ```shell
-  docker buildx build -t lucasbernalte981/extension-hackathon-ai:latest . --load
+  docker buildx build -t lucasbernalte981/chatgpt-docker-extension:latest . --load
 ```
 
 To install the extension, use `make install-extension` **or**:
 
 ```shell
-  docker extension install lucasbernalte981/extension-hackathon-ai:latest
+  docker extension install lucasbernalte981/chatgpt-docker-extension:latest
 ```
 
 > If you want to automate this command, use the `-f` or `--force` flag to accept the warning message.
@@ -59,19 +74,19 @@ This starts a development server that listens on port `3000`.
 You can now tell Docker Desktop to use this as the frontend source. In another terminal run:
 
 ```shell
-  docker extension dev ui-source lucasbernalte981/extension-hackathon-ai:latest http://localhost:3000
+  docker extension dev ui-source lucasbernalte981/chatgpt-docker-extension:latest http://localhost:3000
 ```
 
 In order to open the Chrome Dev Tools for your extension when you click on the extension tab, run:
 
 ```shell
-  docker extension dev debug lucasbernalte981/extension-hackathon-ai:latest
+  docker extension dev debug lucasbernalte981/chatgpt-docker-extension:latest
 ```
 
 Each subsequent click on the extension tab will also open Chrome Dev Tools. To stop this behaviour, run:
 
 ```shell
-  docker extension dev reset lucasbernalte981/extension-hackathon-ai:latest
+  docker extension dev reset lucasbernalte981/chatgpt-docker-extension:latest
 ```
 
 ### Backend development (optional)
@@ -84,7 +99,7 @@ Whenever you make changes in the [backend](./backend) source code, you will need
 Use the `docker extension update` command to remove and re-install the extension automatically:
 
 ```shell
-docker extension update lucasbernalte981/extension-hackathon-ai:latest
+docker extension update lucasbernalte981/chatgpt-docker-extension:latest
 ```
 
 > If you want to automate this command, use the `-f` or `--force` flag to accept the warning message.
@@ -96,7 +111,7 @@ docker extension update lucasbernalte981/extension-hackathon-ai:latest
 To remove the extension:
 
 ```shell
-docker extension rm lucasbernalte981/extension-hackathon-ai:latest
+docker extension rm lucasbernalte981/chatgpt-docker-extension:latest
 ```
 
 ## What's next?
